@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Google Index & Sıralama Kontrol</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: #f4f5f7;
+    margin: 0;
+    padding: 40px 16px;
+    display: flex;
+    justify-content: center;
+  }
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    padding: 32px;
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 24px;
+    color: #1a1a1a;
+    text-align: center;
+  }
+  .input-row {
+    display: flex;
+    gap: 8px;
+  }
+  input {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 15px;
+  }
+  button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    background: #1a73e8;
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .results {
+    margin-top: 24px;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 15px;
+  }
+  .row:last-child { border-bottom: none; }
+  .label { color: #666; }
+  .value { font-weight: 600; color: #1a1a1a; }
+  .error { color: #d32f2f; margin-top: 16px; font-size: 14px; }
+  .loading { color: #666; margin-top: 16px; font-size: 14px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Google Index & Sıralama Kontrolü</h1>
+    <div class="input-row">
+      <input id="domain" type="text" placeholder="ornek.com" />
+      <button id="btn" onclick="check()">Sorgula</button>
+    </div>
+    <div id="output"></div>
+  </div>
+
+<script>
+async function check() {
+  const domain = document.getElementById('domain').value.trim();
+  const output = document.getElementById('output');
+  const btn = document.getElementById('btn');
+  if (!domain) return;
+
+  btn.disabled = true;
+  output.innerHTML = '<div class="loading">Sorgulanıyor...</div>';
+
+  try {
+    const res = await fetch('/api/check?domain=' + encodeURIComponent(domain));
+    const data = await res.json();
+
+    if (!res.ok) {
+      output.innerHTML = '<div class="error">' + (data.error || 'Bir hata oluştu') + '</div>';
+      return;
+    }
+
+    output.innerHTML = `
+      <div class="results">
+        <div class="row"><span class="label">Site</span><span class="value">${data.domain}</span></div>
+        <div class="row"><span class="label">Tahmini index sayısı</span><span class="value">${data.indexCount !== null ? data.indexCount.toLocaleString('tr-TR') : 'Bulunamadı'}</span></div>
+        <div class="row"><span class="label">Sıralama</span><span class="value">${data.position ? data.position + '. sırada' : 'İlk ' + data.checkedCount + ' sonuçta bulunamadı'}</span></div>
+      </div>
+    `;
+  } catch (e) {
+    output.innerHTML = '<div class="error">Bağlantı hatası: ' + e.message + '</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('domain').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') check();
+});
+</script>
+</body>
+</html>
